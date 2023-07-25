@@ -1,0 +1,32 @@
+{
+  "name": "zoom_challenge",
+  "version": "1.0.0",
+  "description": "Zoom Clone Challenge using NodeJS, WebRTC and Websockets",
+  "scripts": {
+    "dev": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dition0221/zoom_challenge.git"
+  },
+  "author": "dition0221",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dition0221/zoom_challenge/issues"
+  },
+  "homepage": "https://github.com/dition0221/zoom_challenge#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.22.5",
+    "@babel/core": "^7.22.5",
+    "@babel/node": "^7.22.5",
+    "@babel/preset-env": "^7.22.5",
+    "@prettier/plugin-pug": "^2.5.1",
+    "nodemon": "^2.0.22",
+    "prettier": "^2.8.8"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pug": "^3.0.2",
+    "ws": "^8.13.0"
+  }
+}
