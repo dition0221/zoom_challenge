@@ -1,8 +1,6 @@
-import { Socket } from "dgram";
 import express from "express";
 import http from "http";
-import { parse } from "path";
-import { WebSocketServer } from "ws";
+import { Server } from "socket.io";
 
 /* 서버 생성 */
 const app = express();
@@ -19,11 +17,22 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
-/* WebSocket 서버 설정 */
-const server = http.createServer(app); // HTTP Server
-const wss = new WebSocketServer({ server }); // WebSocket Server
+/* WebSocket server settings */
+const httpServer = http.createServer(app); // HTTP Server
+const wsServer = new Server(httpServer); // Socket.io Server
 
-/* WebSocket Events */
+/* WebSocket events */
+wsServer.on("connection", (socket) => {
+  socket.on("enter_room", (msg, done) => {
+    console.log(msg);
+    setTimeout(() => {
+      done();
+    }, 1000);
+  });
+});
+
+/*
+// WebSocket events
 const sockets = []; // fake DB for online chatting
 wss.on("connection", (backSocket) => {
   sockets.push(backSocket);
@@ -50,8 +59,9 @@ wss.on("connection", (backSocket) => {
     }
   });
 });
+*/
 
 /* 서버 실행 */
-server.listen(PORT, () =>
+httpServer.listen(PORT, () =>
   console.log(`✅ Server Connected: http://localhost:${PORT}`)
 );
