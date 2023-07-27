@@ -67,8 +67,33 @@
         - JSON.parse(): JSON 문자열 -> JS 객체
         - JS 객체로 변환 후, 조건문을 사용해 메시지의 용도를 구분
       - 닉네임 설정: socket은 객체이기 때문에 프로퍼티를 추가해 사용
-- **23-07-26 : #2.0 ~ #2.3 / (+ Code Challenge(2 days)[1st day])**
-- **23-07-27 : #2.4 ~ #2.11 / (+ Code Challenge(2 days)[2nd day])**
+- **23-07-26 : #2.0 ~ #2.3 / Socket.io(1) (+ Code Challenge(2 days)[1st day])**
+  - Socket.io 패키지
+    - 실시간, 양방향 event 기반의 통신을 가능하게 하는 framework
+      - 연결이 끊어지면 자동으로 재연결을 시도
+      - WebSocket에 문제가 생겨도 다른 방법을 이용해 계속 작동
+      - 실시간 기능 등을 더 쉽게 만드는 편리한 코드를 제공
+    - 서버 설정법
+      - [Back-End] HTTP 서버 생성 후 io서버를 위에 쌓아올리는 방식
+      - [Front-End] client에도 Socket.io를 설치해야 함
+        - Socket.io는 WebSocket의 부가기능이 아니며, 브라우저의 WS와 호환되지 않기 때문
+        - Socket.io서버가 생성되면, '/socket.io/socket.io.js'라는 URL주소를 줌
+        - 해당 JavaScript 파일을 view의 최상단 script로 사용
+    - Back-End와 Front-End 연결(Connection)
+      - [Back-End] io서버의 'connection'이벤트를 사용해 연결
+      - [Front-End] 자동으로 io서버와 연결해주는 'io'함수를 사용해 socket 생성
+        - WebSocket처럼 host주소를 입력할 필요가 없음
+      - 연결 완료 시 지금 연결된 모든 socket을 자동적으로 추적함
+    - 메시지 이벤트(Message event)
+      - 송신: '소켓.emit(이벤트명, 보낼데이터 [, 콜백함수])'를 사용해 event를 생성해 전송
+        - 이벤트명 : 원하는 이름 커스텀 사용 가능
+        - 보낼데이터 : 모든 데이터타입 가능 (JSON 변환 필요없음), 원하는 갯수만큼 가능
+        - 콜백함수 : 서버에서 제어할 수 있는 함수, 실행은 Front-End에서 됨
+          - 무조건 마지막 인수에서 사용해야 함
+      - 수신: '소켓.on(이벤트명, 콜백함수)'를 사용
+        - 이벤트명 : 메시지 수신 시 송신 이벤트명과 같은 이벤트명을 사용해야 함
+        - 콜백함수 : 메시지 수신 시 'message' 매개변수 사용
+- **23-07-27 : #2.4 ~ #2.11 / Socket.io(2) (+ Code Challenge(2 days)[2nd day])**
 
 ---
 
