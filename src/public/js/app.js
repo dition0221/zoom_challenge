@@ -1,94 +1,132 @@
 /* Connect Socket.io */
 const socket = io();
 
-const welcome = document.querySelector("#welcome");
-const homeForm = welcome.querySelector("form");
-const room = document.querySelector("#room");
+const myFace = document.getElementById("myFace");
+const muteBtn = document.getElementById("mute");
+const cameraBtn = document.getElementById("camera");
+const camerasSelect = document.getElementById("cameras");
+const call = document.getElementById("call");
 
-let roomName = "";
+let myStream;
+let isAudio = true;
+let isVideo = true;
+let roomName;
+/** @type {RTCPeerConnection} */
+let myPeerConnection;
 
-/* f: Add message element */
-function addMessage(message) {
-  const ul = room.querySelector("ul");
-  const li = document.createElement("li");
-  li.innerText = message;
-  ul.appendChild(li);
+/* Show camera list */
+async function getCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter((device) => device.kind === "videoinput");
+    const currentCamera = myStream.getVideoTracks()[0].label;
+    cameras.forEach((camera) => {
+      const option = document.createElement("option");
+      option.value = camera.deviceId;
+      option.innerText = camera.label;
+      if (currentCamera === camera.label) {
+        option.selected = true;
+      }
+      camerasSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-/* Chat message */
-function handleMessageSubmit(event) {
-  event.preventDefault();
-  const input = room.querySelector("#message input");
-  socket.emit("new_message", input.value, roomName, () => {
-    addMessage(`You: ${input.value}`); // just writer's screen
-    input.value = "";
-  });
+/* Get video stream */
+async function getMedia(deviceId) {
+  const initialConstraint = {
+    audio: true,
+    video: { facingMode: "user" },
+  };
+  const cameraConstraint = {
+    audio: true,
+    video: { deviceId: { exact: deviceId } },
+  };
+  // show
+  try {
+    myStream = await navigator.mediaDevices.getUserMedia(
+      deviceId ? cameraConstraint : initialConstraint
+    );
+    myFace.srcObject = myStream;
+    if (!deviceId) {
+      await getCameras();
+    }
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-/* Set nickname */
-function handleNameSubmit(event) {
-  event.preventDefault();
-  const input = room.querySelector("#name input");
-  socket.emit("nickname", input.value);
-}
+/* Mute/Unmute */
+muteBtn.addEventListener("click", () => {
+  myStream
+    .getAudioTracks()
+    .forEach((track) => (track.enabled = !track.enabled));
+  muteBtn.innerText = isAudio ? "Unmute" : "Mute";
+  isAudio = isAudio ? false : true;
+});
 
-/* Count user in room */
-function countUser(count) {
-  const h3 = room.querySelector("h3");
-  h3.innerText = `Room: ${roomName} (${count})`;
+/* Camera on/off */
+cameraBtn.addEventListener("click", () => {
+  myStream
+    .getVideoTracks()
+    .forEach((track) => (track.enabled = !track.enabled));
+  cameraBtn.innerText = isVideo ? "Turn Camera On" : "Turn Camera Off";
+  isVideo = isVideo ? false : true;
+});
+
+/* Change camera */
+camerasSelect.addEventListener("input", async () => {
+  await getMedia(camerasSelect.value);
+});
+
+// [ Room: Welcome form ]
+
+const welcome = document.getElementById("welcome");
+const welcomeForm = welcome.querySelector("form");
+
+/* Start video call */
+async function initCall() {
+  welcome.hidden = true;
+  call.hidden = false;
+  await getMedia();
+  makeConnection(); // Set RTC connection
 }
 
 /* Join room */
-function showRoom(count) {
-  welcome.hidden = true;
-  room.hidden = false;
-  countUser(count);
-  // Message
-  const messageForm = room.querySelector("#message");
-  messageForm.addEventListener("submit", handleMessageSubmit);
-  // Nickname
-  const nameForm = room.querySelector("#name");
-  nameForm.addEventListener("submit", handleNameSubmit);
-}
-
-/* Enter room */
-homeForm.addEventListener("submit", (event) => {
+welcomeForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const input = homeForm.querySelector("input");
+  const input = welcomeForm.querySelector("input");
+  await initCall();
+  socket.emit("join_room", input.value);
   roomName = input.value;
-  socket.emit("enter_room", input.value, (newCount) => {
-    showRoom(newCount);
-  });
   input.value = "";
 });
 
-/* Enter room */
-socket.on("welcome", (user, count) => {
-  countUser(count);
-  addMessage(`${user} arrived :)`);
+/* Socket Events Code */
+// RTC offer
+socket.on("welcome", async () => {
+  const offer = await myPeerConnection.createOffer();
+  myPeerConnection.setLocalDescription(offer);
+  socket.emit("offer", offer, roomName);
+});
+// RTC answer
+socket.on("offer", async (offer) => {
+  myPeerConnection.setRemoteDescription(offer);
+  const answer = await myPeerConnection.createAnswer();
+  myPeerConnection.setLocalDescription(answer);
+  socket.emit("answer", answer, roomName);
+});
+// RTC connect
+socket.on("answer", (answer) => {
+  myPeerConnection.setRemoteDescription(answer);
 });
 
-/* Exit room */
-socket.on("bye", (user, count) => {
-  countUser(count);
-  addMessage(`${user} left :(`);
-});
-
-/* Chat message */
-socket.on("new_message", addMessage); // Send message except writer
-
-/* Room change */
-socket.on("room_change", (rooms, count) => {
-  // refresh
-  const roomList = welcome.querySelector("ul");
-  roomList.innerHTML = "";
-  if (rooms.length === 0) {
-    return;
-  }
-  // show
-  rooms.forEach((room) => {
-    const li = document.createElement("li");
-    li.innerText = room;
-    roomList.appendChild(li);
-  });
-});
+/* RTC: Set peer connection */
+function makeConnection() {
+  myPeerConnection = new RTCPeerConnection();
+  myStream
+    .getTracks()
+    .forEach((track) => myPeerConnection.addTrack(track, myStream));
+}

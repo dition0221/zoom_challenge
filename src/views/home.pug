@@ -11,18 +11,13 @@ html(lang="ko")
     main
       #welcome
         form
-          input(type="text", placeholder="Room's Name", required)
+          input(type="text", placeholder="Room Name", required)
           button Enter Room
-        h4 Open rooms:
-        ul
-      #room(hidden)
-        h3
-        ul
-        form#name
-          input(type="text", placeholder="Nickname", required)
-          button Send
-        form#message
-          input(type="text", placeholder="Message", required)
-          button Send
+      #call(hidden)
+        #myStream
+          video#myFace(autoplay, playsinline, width="400", height="400")
+          button#mute Mute
+          button#camera Turn Camera Off
+          select#cameras
   script(src="/socket.io/socket.io.js")
   script(src="/public/js/app.js")

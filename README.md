@@ -86,6 +86,7 @@
       - 연결 완료 시 지금 연결된 모든 socket을 자동적으로 추적함
     - 메시지 이벤트(Message event)
       - 송신: '소켓.emit(이벤트명, 보낼데이터 [, 콜백함수])'를 사용해 event를 생성해 전송
+        - 자기 자신을 제외한 다른 사용자들에게 메시지를 보내는 기능
         - 이벤트명 : 원하는 이름 커스텀 사용 가능
         - 보낼데이터 : 모든 데이터타입 가능 (JSON 변환 필요없음), 원하는 갯수만큼 가능
         - 콜백함수 : 서버에서 제어할 수 있는 함수, 실행은 Front-End에서 됨
@@ -94,9 +95,59 @@
         - 이벤트명 : 메시지 수신 시 송신 이벤트명과 같은 이벤트명을 사용해야 함
         - 콜백함수 : 메시지 수신 시 'message' 매개변수 사용
 - **23-07-27 : #2.4 ~ #2.11 / Socket.io(2) (+ Code Challenge(2 days)[2nd day])**
+  - room : 서로 소통할 수 있는 socket 그룹 (ex. 채팅방)
+    - 소켓.join(방이름) : 해당 room에 socket을 추가 (방 입장)
+      - 배열을 사용해 여러 room에 동시에 참가 가능
+    - 소켓.to(방이름) : 해당 room에 있는 전체에게 메시지를 보낼 수 있음
+      - 방이름 대신 socket.id를 사용하면, 귓속말 기능으로 사용 가능
+        - socket마다 자기자신의 private room에 존재하고있기 때문
+      - 체이닝으로 여러 방 또는 '.emit()' 메서드를 사용
+    - 소켓.leave(방이름) : 해당 room 떠나기
+    - 소켓.id : 해당 socket의 id
+    - 소켓.rooms : 해당 socket이 참여중인 room의 리스트(Set타입)
+      - 사용자의 id는 사용자가 있는 방의 id와 같음
+      - 기본적으로 사용자와 서버 사이에 private 방이 있기 때문
+    - 소켓.onAny(콜백함수) : 모든 event에 사용하는 middleware 생성
+      - 콜백함수의 매개변수로 event와 다른 인수들 사용 가능
+    - 서버.sockets.emit() : 모두에게 메시지 전송
+    - 서버.socketJoin(방이름) : 서버의 모든인원을 해당 방에 입장시킴
+    - 서버.in(방이름1).socketJoin(방이름2) : '방1'의 모든인원을 '방2'에 입장시킴
+    - socket의 'disconnecting' 이벤트를 사용해 방에 나갈 시 이벤트를 사용 가능
+      - disconnecting : 서버와 연결 끊기 직전의 event
+      - disconnect : 서버와 연결 끊은 직후의 event
+  - 닉네임 설정 : socket은 객체이므로 새로운 프로퍼티를 생성 후 저장하여 사용
+  - adapter
+    - 다른 서버들 사이에 실시간 application을 동기화하는 것
+      - 현재 서버 memory에서 adapter를 사용 중이라, DB처럼 기억하지 않음
+      - 실제 app을 만들 시 DB를 사용해야 함 (DB를 사용해 adapter로 서버 간 통신)
+      - 모든 client가 동일한 서버에 연결되지는 않기 때문
+      - adapter는 application으로 통하는 창문
+      - 누가 연결되었는지, room이 얼마나 있는지 등을 알려줌
+    - '서버.sockets.adapter'를 통해 room들의 정보와 사용자들의 정보 등을 알 수 있음
+      - ex. wsServer.sockets.adapter
+        - .rooms : 방 목록
+        - .sids : 사용자(socket.id) 목록
+        - 방이름과 사용자명이 같으면 private room, 다르면 public room
+          - 모든 socket은 자신의 id와 동명의 방을 가지고 있기 때문
+        - 목록은 'Map' 데이터타입으로 되어있음
+          - 키-값 쌍의 집합으로 이루어진 데이터 타입
+          - 키의 중복 불가능
+    - pubic room 추출 : '.forEach()' 반복문 사용
+      - [Map 데이터타입] 첫번째 매개변수는 value, 두번째 매개변수는 key
+      - '.rooms'에서 '.sids'를 뺸 나머지가 public rooms
+    - 채팅방의 인원 수
+      - '서버.sockets.adapter.rooms'를 통해 각 방 마다 누가있는지 확인 가능
+      - 각 value는 Set 데이터타입으로 이루어져있음
+        - Set은 '.size' 프로퍼티를 이용해 갯수를 알아낼 수 있음
+  - Admin UI
+    - Socket.io의 Back-End를 위한 UI : 모든 socket, room, client 등 확인 가능
+    - 설치법 : npm i '@socket.io/admin-ui'
+    - 설정법
+      1. 서버파일에 'import { instrument } from "@socket.io/admin-ui";' 추가하기
+      2. io서버 생성무에서 옵션 추가하기
+      3. 'admin.socket.io'에 접속하기: Server URL은 host주소
+- **23-07-29 : #3.0 ~ #3.6 / Video call(1) (+ Code Challenge(3 days)[2nd day])**
 
 ---
 
-- **23-07-28 : #3.1 ~ #3.12 / (+ Code Challenge(3 days)[1st day])**
-- **23-07-29 : #3.1 ~ #3.12 / (+ Code Challenge(3 days)[2nd day])**
-- **23-07-30 : #3.1 ~ #3.12 / (+ Code Challenge(3 days)[3rd day])**
+- **23-07-30 : #3.7 ~ #3.12 / Video call(2) (+ Code Challenge(3 days)[3rd day])**

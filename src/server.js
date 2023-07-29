@@ -32,90 +32,22 @@ instrument(wsServer, {
   mode: "development",
 });
 
-// Get public rooms
-function publicRooms() {
-  const { sids, rooms } = wsServer.sockets.adapter;
-  const publicRooms = [];
-  rooms.forEach((_, key) => {
-    if (sids.get(key) === undefined) {
-      publicRooms.push(key);
-    }
-  });
-  return publicRooms;
-}
-
-// Count users in room
-function countRoom(roomName) {
-  return wsServer.sockets.adapter.rooms.get(roomName)?.size;
-}
-
-/* WebSocket events */
+/* Socket.io Events */
 wsServer.on("connection", (socket) => {
-  // Init
-  socket.nickname = "Anonymous";
-  wsServer.sockets.emit("room_change", publicRooms());
-  // Middleware - logger
-  socket.onAny((event) => {
-    console.log(`Socket Event: ${event}`);
-  });
-  // Enter room
-  socket.on("enter_room", (roomName, done) => {
+  // Join room
+  socket.on("join_room", (roomName) => {
     socket.join(roomName);
-    done(countRoom(roomName));
-    // info
-    socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));
-    wsServer.sockets.emit("room_change", publicRooms());
+    socket.to(roomName).emit("welcome");
   });
-  // Before exit room
-  socket.on("disconnecting", () => {
-    socket.rooms.forEach((room) => {
-      socket.to(room).emit("bye", socket.nickname, countRoom(room) - 1);
-    });
+  // Connect RTC: Offer
+  socket.on("offer", (offer, roomName) => {
+    socket.to(roomName).emit("offer", offer);
   });
-  // Exit room
-  socket.on("disconnect", () => {
-    socket.rooms.forEach((room) => {
-      wsServer.sockets.emit("room_change", publicRooms());
-    });
-  });
-  // Chatting
-  socket.on("new_message", (msg, room, done) => {
-    socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
-    done();
-  });
-  // Nickname setting
-  socket.on("nickname", (nickname) => (socket.nickname = nickname));
-});
-
-/*
-// WebSocket events
-const sockets = []; // fake DB for online chatting
-wss.on("connection", (backSocket) => {
-  sockets.push(backSocket);
-  backSocket.nickname = "Anonymous"; // Nickname default
-  // Connect / Disconnect
-  console.log("connected to Browser ✅");
-  backSocket.on("close", () => {
-    console.log("Disconnected from browser ❌");
-  });
-  // Message
-  backSocket.on("message", (msg) => {
-    const message = JSON.parse(msg);
-    switch (message.type) {
-      case "new_message":
-        sockets.forEach((aSocket) =>
-          aSocket.send(
-            `${backSocket.nickname}: ${message.payload.toString("utf8")}`
-          )
-        );
-        break;
-      case "nickname":
-        backSocket.nickname = message.payload;
-        break;
-    }
+  // Connect RTC: Answer
+  socket.on("answer", (answer, roomName) => {
+    socket.to(roomName).emit("answer", answer);
   });
 });
-*/
 
 /* 서버 실행 */
 httpServer.listen(PORT, () =>
