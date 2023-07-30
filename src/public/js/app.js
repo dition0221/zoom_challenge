@@ -81,6 +81,7 @@ camerasSelect.addEventListener("input", async () => {
   await getMedia(camerasSelect.value);
 });
 
+// ============================================================
 // [ Room: Welcome form ]
 
 const welcome = document.getElementById("welcome");
@@ -90,7 +91,7 @@ const welcomeForm = welcome.querySelector("form");
 async function initCall() {
   welcome.hidden = true;
   call.hidden = false;
-  await getMedia();
+  await getMedia(); // Show my media screen
   makeConnection(); // Set RTC connection
 }
 

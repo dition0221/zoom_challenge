@@ -28,8 +28,8 @@
       - 설정법: 따로 WS서버를 구축하지 않고, HTTP를 사용하는 Express를 그대로 사용하면서 구축
         1. Node.js에 내장되어있는 HTTP package를 사용해 HTTP서버 생성
         2. 생성한 HTTP서버에 접근 후, HTTP서버 위에 WS서버 생성
-        - HTTP서버를 실행해, 두 서버 다 사용 가능 (같은 port를 공유하기 때문)
-        - 각각 따로 서버를 만들거나, WS서버만 만들어도 무방함
+           - HTTP서버를 실행해, 두 서버 다 사용 가능 (같은 port를 공유하기 때문)
+           - 각각 따로 서버를 만들거나, WS서버만 만들어도 무방함
     - WebSocket 연결(connection)
       - WS서버를 사용하므로, 다른 설치가 필요없이 브라우저에서 지원됨
         - 브라우저에서는 내장된 WebSocket API 존재
@@ -55,7 +55,7 @@
       - 서버에서 누가 연결되어있는지 알기위해 'fake DB'(Array) 사용
       1. 브라우저가 WS서버와 연결 시 socket을 DB list에 넣음
       2. Back-End가 메시지를 받을 시 연결되어있는 모든 브라우저에게 메시지를 전송
-      - '.forEach()'를 사용해 DB list에 있는 모든 socket에게 발송
+         - '.forEach()'를 사용해 DB list에 있는 모든 socket에게 발송
     - 여러 개의 메시지를 한 번에 전송
       - WS는 한 번에 하나의 메시지(String 타입)만 발신/수신 가능
         - JavaScript 객체 사용 불가능
@@ -147,7 +147,73 @@
       2. io서버 생성무에서 옵션 추가하기
       3. 'admin.socket.io'에 접속하기: Server URL은 host주소
 - **23-07-29 : #3.0 ~ #3.6 / Video call(1) (+ Code Challenge(3 days)[2nd day])**
+  - video 권한
+    1. template에서 video element 생성하기
+       - video의 'playsinline' 속성 : 모바일에서 인라인으로 재생하게하는 프로퍼티
+    2. JavaScript에서 권한 및 stream 생성하기
+       - stream : video와 audio가 결합된 것
+       - 'navigator.mediaDevices.getUserMedia(옵션)' : 비동기로 stream 추출
+         - stream은 동적 source이므로, video.srcObject 프로퍼티에 값을 할당
+  - 카메라 제어 버튼
+    - stream은 'track'을 제공함
+      - track : video, audio, 자막 등
+    - '스트림.getAudioTracks()' 또는 '스트림.getVideoTracks()'를 사용
+      - '.enabled' : 활성화/비활성화
+      - '.muted' : (읽기 전용) 음소거 여부
+      - ex. myStream.getAudioTracks().forEach((track) => (track.enabled = !track.enabled));
+  - 디바이스 목록 만들기
+    - 'navigator.mediaDevices.enumerateDevices()' : 모든 장치 정보(배열)를 가져옴
+      - promise 형태이기 때문에 비동기로 사용
+      - 각 값의 'kind'속성에서 video인지 audio인지 구분 가능
+    - 가져온 장치 정보 배열에서 원하는 장치 목록을 구성
+    - select element를 사용해서 리스트를 열거
+      - option element의 value는 '.deviceId'로 설정 (Unique ID)
+    - 사용할 장치를 선택한 후, stream을 다시 시작해야 함
+      - stream의 옵션으로 'deviceId'를 사용해 생성
+  - WebRTC (Web Real-Time Communication)
+    - 실시간 소통을 가능하게 해주는 기술
+    - 'peer-to-peer(P2P)' 지원 : 서버를 거치지 않고, 직접적으로 통신
+    - 서버가 아예 필요없지는 않고, 'signaling'을 하기 위해 서버가 필요함
+      - 사용자가 어디에 있는지(ip, port, 방화벽 등) 알아내어 서로 연결하기 위함
+      - signaling이 끝나면, P2P 연결이 됨
+    - video, audio, text 등을 통신할 수 있음
+  - RTC 연결
+    - Socket.io로 room을 만들면, 서로 서버를 통한 연결이 됨
+      - 서버와 연결된 양쪽 사용자를 서로 연결시키는 연결통로를 만들어야 함
+      - 각 사용자 마다 설정이 이루어지고, 서버(Socket.io)를 사용해 연결
+    1. [Front-End] 각 사용자에게 peer연결 설정하기
+       - 'new RTCPeerConnection()' 객체를 생성해 peer연결 설정
+    2. [Front-End] peer연결 안에 연결할 데이터 집어넣기
+       - video와 audio를 연결을 통해 전달하기 위해, P2P 연결 안에 데이터를 집어넣어야 함
+       - stream에서 각각의 track(video, audio)을 추출한 후, peer연결에 넣음
+         - '스트림.getTracks()' : stream의 현재 track들을 배열로 변환
+         - 'peer연결.addTrack(트랙, 스트림)' : peer연결에 해당 스트림의 트랙 데이터를 넣음
+    3. [Front-End] 연결 'offer' 생성/설정/전송하기
+       1. 먼저 들어온 사용자가 'offer'를 생성하기
+          - 'peer연결.createOffer()'
+          - 뒤에 들어온 사용자로부터 socket메시지를 받는 이벤트를 사용해 구현
+       2. 'offer' 설정하기
+          - 방금 만든 offer로 연결을 구성해야 함
+          - 'peer연결.setLocalDescription(OFFER)' 메서드를 사용해 offer를 구성
+            - 연결 인터페이스와 관련이 있는 로컬 설명을 변경함
+            - (ex.) myPeerConnection.setLocalDescription(offer);
+       3. 'offer' 전송하기
+          - Socket.io를 사용해 전송
+          - 제공하는 자 ➡ 서버 ➡ 제공받는 자
+    4. [Front-End] 'offer' 수령 및 'answer' 생성/설정/전송하기
+       1. 받은 'offer'를 설정하기
+          - 'peer연결.setRemoteDescription(데이터)' : 멀리 떨어진 peer의 description을 세팅
+       2. 'answer' 생성 : 'peer연결.createAnswer()'
+       3. 'answer' 설정 : 'peer연결.setLocalDescription(ANSWER)'
+       4. 'answer' 전송
+    5. [Front-End] 'answer' 수령하기
+       - 'peer연결.setRemoteDescription(데이터)'
+- **23-07-30 : #3.7 ~ #3.12 / Video call(2) (+ Code Challenge(3 days)[3rd day])**
 
 ---
 
-- **23-07-30 : #3.7 ~ #3.12 / Video call(2) (+ Code Challenge(3 days)[3rd day])**
+**To-Do list**
+
+- 마이크 목록 만들기
+- 음소거, 화면on/off 버튼 수정
+  - 음소거 후 카메라 변경 시 작동이 반대로 됨
