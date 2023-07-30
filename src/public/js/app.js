@@ -1,3 +1,5 @@
+/** @type {RTCPeerConnection} */
+
 /* Connect Socket.io */
 const socket = io();
 
@@ -11,7 +13,6 @@ let myStream;
 let isAudio = true;
 let isVideo = true;
 let roomName;
-/** @type {RTCPeerConnection} */
 let myPeerConnection;
 
 /* Show camera list */
@@ -78,7 +79,15 @@ cameraBtn.addEventListener("click", () => {
 
 /* Change camera */
 camerasSelect.addEventListener("input", async () => {
-  await getMedia(camerasSelect.value);
+  await getMedia(camerasSelect.value); // Create new stream
+  // Update video call
+  if (myPeerConnection) {
+    const videoTrack = myStream.getVideoTracks()[0];
+    const videoSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === "video");
+    videoSender.replaceTrack(videoTrack);
+  }
 });
 
 // ============================================================
@@ -124,8 +133,9 @@ socket.on("answer", (answer) => {
   myPeerConnection.setRemoteDescription(answer);
 });
 // RTC IceCandidate
-// ********************************** 5:46
-socket.on("ice", () => {});
+socket.on("ice", (candidate) => {
+  myPeerConnection.addIceCandidate(candidate);
+});
 
 /* RTC: Set peer connection */
 function makeConnection() {
@@ -134,6 +144,18 @@ function makeConnection() {
   myPeerConnection.addEventListener("icecandidate", (data) => {
     socket.emit("ice", data.candidate, roomName);
   });
+  // Add stream Event
+  if (myPeerConnection.ontrack) {
+    myPeerConnection.addEventListener("track", (data) => {
+      const peerFace = document.getElementById("peerFace");
+      peerFace.srcObject = data.stream;
+    });
+  } else {
+    myPeerConnection.addEventListener("addstream", (data) => {
+      const peerFace = document.getElementById("peerFace");
+      peerFace.srcObject = data.stream;
+    });
+  }
   // Add stream tracks on Peer connection
   myStream
     .getTracks()
