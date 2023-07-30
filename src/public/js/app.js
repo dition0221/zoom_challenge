@@ -123,10 +123,18 @@ socket.on("offer", async (offer) => {
 socket.on("answer", (answer) => {
   myPeerConnection.setRemoteDescription(answer);
 });
+// RTC IceCandidate
+// ********************************** 5:46
+socket.on("ice", () => {});
 
 /* RTC: Set peer connection */
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection();
+  // IceCandidate Event
+  myPeerConnection.addEventListener("icecandidate", (data) => {
+    socket.emit("ice", data.candidate, roomName);
+  });
+  // Add stream tracks on Peer connection
   myStream
     .getTracks()
     .forEach((track) => myPeerConnection.addTrack(track, myStream));

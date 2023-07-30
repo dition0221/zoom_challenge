@@ -1,7 +1,7 @@
 {
   "name": "zoom_challenge",
   "version": "1.0.0",
-  "description": "Zoom Clone Challenge using NodeJS, WebRTC and Websockets",
+  "description": "Zoom Clone Challenge using NodeJS, WebRTC and WebSockets",
   "scripts": {
     "dev": "nodemon"
   },

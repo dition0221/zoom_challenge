@@ -47,6 +47,10 @@ wsServer.on("connection", (socket) => {
   socket.on("answer", (answer, roomName) => {
     socket.to(roomName).emit("answer", answer);
   });
+  // Connect RTC: Candidate
+  socket.on("ice", (candidate, roomName) => {
+    socket.to(roomName).emit("ice", candidate);
+  });
 });
 
 /* 서버 실행 */
